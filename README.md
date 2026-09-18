@@ -18,4 +18,8 @@ detection and response experience.
 Real incident data can't leave the organizations I've worked for, so these 
 are narrative case studies rather than logs or screenshots — focused on the 
 investigative process, decisions made, and outcomes. For visual, hands-on 
-proof of the same skills, see [`soc-home-lab`](../soc-home-lab).# incident-writeups
+proof of the same skills, see [`soc-home-lab`](../soc-home-lab).
+
+> **Note:** Details have been generalized and anonymized to protect 
+> confidentiality. These are not verbatim accounts of any specific 
+> employer's environment, systems, or incidents.
