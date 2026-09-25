@@ -12,6 +12,10 @@ detection and response experience.
 - [`sentinelone-fp-triage.md`](./sentinelone-fp-triage.md) — Investigated a 
   SentinelOne EDR false-positive quarantine, verified via hash/VirusTotal, 
   and tuned detection to prevent recurrence.
+- [`unauthorized-screenconnect-removal.md`](./unauthorized-screenconnect-removal.md) — Identified and
+  removed an unauthorized RMM client exhibiting anti-removal, self-protective
+  behavior on a BYOD endpoint, using an offline (Safe Mode) approach to
+  bypass the live protection mechanism.
 
 ## Why this repo exists
 
