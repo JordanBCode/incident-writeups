@@ -1,0 +1,54 @@
+# Incident Write-Up: Unauthorized RMM Client Removal (ScreenConnect)
+
+**Category:** Endpoint Security / Incident Response
+**Systems Involved:** Windows 10 Pro (BYOD, unmanaged endpoint)
+
+*Note: Details have been generalized to protect the identity of the individual involved.*
+
+## Summary
+
+Identified an unauthorized ScreenConnect (ConnectWise Control) remote access client installed on a colleague's personal BYOD laptop that was also used for work. The client actively resisted standard removal — including ownership and permissions repeatedly reverting during cleanup attempts — which was treated as a strong indicator of malicious intent rather than a routine leftover install. The client and its separate installer package were ultimately removed via an offline (Safe Mode) approach that bypassed the live protection mechanism.
+
+## Environment Context
+
+The affected device was a personal, unmanaged laptop — not domain-joined and not on the corporate network beyond the owner's home connection. This meant standard enterprise remediation options (centralized reimaging via management tooling, EDR-driven removal) were not available, and remediation had to be done manually and locally.
+
+## Detection / Discovery
+
+An unrecognized ScreenConnect Client instance was found installed on the device. The owner had not knowingly installed or authorized any remote access software.
+
+## Investigation
+
+Given the presence of an unauthorized remote access tool, the device was immediately isolated from the network as a precaution before further action.
+
+Initial removal attempts followed a standard path and each step failed in a way that escalated concern:
+
+- Standard uninstall via Programs and Features — failed.
+- Stopping and deleting the associated Windows service (`sc stop` / `sc delete`) and manually deleting the install folder — failed with access denied, even from an elevated/administrator context.
+- Attempting to take ownership of the install folder via Properties > Security > Advanced — the owner field could not be reliably set or displayed, and repeated attempts to assign ownership to an administrator account reverted on their own.
+- Switching to a different local administrator account produced the same result, with the folder appearing to become inaccessible again shortly after.
+
+This pattern — permissions and ownership actively reverting rather than simply being restrictive — was the key signal that this was not a normal stuck installer, but software exhibiting self-protective, anti-removal behavior consistent with malicious intent.
+
+BitLocker was also investigated as a possible explanation for the access issues, after it unexpectedly appeared when attempting an offline removal approach via bootable USB media. This was determined to be expected behavior (BitLocker auto-unlocks silently via TPM during a normal boot, but requires the recovery key when booted from external media, since the recovery environment isn't automatically trusted) and was ruled out as the cause of the in-Windows removal failures.
+
+## Resolution
+
+Rather than continuing to fight the live protection mechanism from within a normal Windows session, the device was booted into **Safe Mode**, where most third-party services and drivers — including whatever was actively reasserting the folder's permissions — do not load. From Safe Mode:
+
+1. Used `takeown` from an elevated Command Prompt to successfully regain ownership of the install directory.
+2. Uninstalled the ScreenConnect client.
+3. Located and removed a separate installer/installation program also present on the device, which had not been immediately obvious during the initial investigation.
+
+Removal was successful with no further recurrence of the client, service, or ownership issues after rebooting normally.
+
+## Assessment
+
+The client is assessed as most likely malicious rather than a benign leftover install, primarily based on its removal behavior: legitimate stale software does not typically fight back against ownership and permission changes. The likely delivery vector was a malicious download — possibly via a deceptive link or bundled with a different, unrelated install — though the exact source was not conclusively confirmed.
+
+## Lessons Learned / Takeaways
+
+- **Removal difficulty is itself a signal.** Software that resists straightforward, well-established removal steps (especially permissions/ownership actively reverting) should be treated as a potential compromise indicator, not just an annoying uninstall.
+- **Safe Mode is an effective, low-overhead tool for defeating self-protecting software** on an unmanaged endpoint where enterprise EDR/reimaging tooling isn't available — it removes most third-party protection mechanisms without requiring more advanced forensic tooling.
+- **BYOD/unmanaged devices require an adapted incident response approach.** Without centralized management, remediation depends on manual, methodical local steps and judgment calls (e.g., network isolation) rather than automated enterprise tooling.
+- **Check for companion artifacts, not just the primary payload.** The separate installer package would have been easy to miss if the investigation stopped once the client itself was removed.
